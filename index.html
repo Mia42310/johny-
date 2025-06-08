@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TrackPro | Product Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: #f9fafb;
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    /* Login Page */
+    #loginPage {
+      background: white;
+      padding: 2.5rem 2rem;
+      border-radius: 12px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+      width: 360px;
+      text-align: center;
+    }
+    #loginPage h2 {
+      font-weight: 700;
+      font-size: 1.5rem;
+      margin-bottom: 1.5rem;
+      color: #111827;
+    }
+    #trackingInput {
+      width: 100%;
+      padding: 0.6rem 1rem;
+      border: 2px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 1rem;
+      outline-offset: 2px;
+      transition: border-color 0.3s ease;
+    }
+    #trackingInput:focus {
+      border-color: #2563eb;
+      outline: none;
+    }
+    #trackBtn {
+      margin-top: 1rem;
+      background-color: #2563eb;
+      color: white;
+      padding: 0.75rem 0;
+      width: 100%;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 1.1rem;
+      cursor: pointer;
+      border: none;
+      transition: background-color 0.3s ease;
+    }
+    #trackBtn:hover {
+      background-color: #1e40af;
+    }
+    #error {
+      margin-top: 1rem;
+      color: #dc2626; /* red-600 */
+      font-weight: 600;
+      display: none;
+    }
+
+    /* Tracking Page */
+    #trackingPage {
+      display: none;
+      max-width: 420px;
+      background: white;
+      padding: 2.5rem 2rem;
+      border-radius: 12px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+      position: relative;
+      width: 100%;
+    }
+    .timeline-title {
+      font-weight: 700;
+      font-size: 1.5rem;
+      text-align: center;
+      margin-bottom: 2rem;
+      color: #111827;
+    }
+
+    /* Timeline styles */
+    .timeline {
+      position: relative;
+      padding-left: 80px; /* space for line + dots */
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .timeline-step {
+      position: relative;
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 48px;
+      z-index: 10;
+      width: 100%;
+    }
+    .timeline-step:last-child {
+      margin-bottom: 0;
+    }
+    .timeline-dot {
+      position: absolute;
+      left: 32px; /* center the dot on the vertical line */
+      width: 36px;
+      height: 36px;
+      background-color: #e0e7ff;
+      border-radius: 50%;
+      border: 4px solid #2563eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #2563eb;
+      font-size: 20px;
+      font-weight: 700;
+      box-shadow: 0 0 6px rgba(37, 99, 235, 0.3);
+      transition: background-color 0.3s ease, color 0.3s ease;
+      z-index: 20;
+      flex-shrink: 0;
+      background-clip: padding-box;
+    }
+    .timeline-dot.active {
+      background-color: #2563eb;
+      color: white;
+      border-color: #2563eb;
+      box-shadow: 0 0 12px rgba(37, 99, 235, 0.6);
+    }
+    .timeline-content {
+      margin-left: 80px;
+      flex: 1;
+      color: #374151;
+    }
+    .timeline-content h3 {
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .timeline-content p {
+      font-size: 0.875rem;
+      color: #6b7280;
+    }
+
+    /* Vertical line through dots */
+    .timeline-line {
+      position: absolute;
+      left: 50%; /* center horizontally */
+      transform: translateX(-50%);
+      top: 0; 
+      width: 6px;
+      background-color: #2563eb;
+      border-radius: 9999px;
+      z-index: 1;
+      transition: height 0.7s ease;
+      height: 0;
+    }
+
+    /* Customer Care */
+    #customerCare {
+      margin-top: 2rem;
+      text-align: center;
+      font-size: 0.9rem;
+      color: #4B5563;
+    }
+    #customerCare a {
+      color: #2563eb;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Login Page -->
+  <div id="loginPage" role="form" aria-label="Tracking ID Login">
+    <h2>Track Your Product</h2>
+    <input id="trackingInput" type="text" placeholder="Enter Tracking ID" aria-required="true" aria-describedby="error" />
+    <button id="trackBtn" type="button" aria-label="Submit Tracking ID">Track</button>
+    <p id="error" role="alert">Invalid Tracking ID. Please try again.</p>
+  </div>
+
+  <!-- Tracking Page -->
+  <div id="trackingPage" role="region" aria-label="Product Tracking Timeline">
+    <h2 class="timeline-title">Tracking ID: <span id="trackingId">12345678</span></h2>
+    <div class="timeline" id="timeline">
+      <div id="timelineSteps"></div>
+      <div class="timeline-line" id="timelineLine"></div>
+    </div>
+
+    <!-- Customer Care Email -->
+    <div id="customerCare">
+      📧 CUSTOMERCARE: <a href="mailto:xyz@gmail.com">xyz@gmail.com</a>
+    </div>
+  </div>
+
+<script>
+  const validTrackingId = "12345678";
+  const updates = [
+    { icon: "📦", title: "Order Placed", desc: "Your order has been received and is being processed." },
+    { icon: "🚚", title: "Dispatched", desc: "The package has left the warehouse and is on its way." },
+    { icon: "🛵", title: "Out for Delivery", desc: "Courier is out to deliver your package." },
+    { icon: "✅", title: "Delivered", desc: "Your package has been delivered successfully." }
+  ];
+
+  const loginPage = document.getElementById("loginPage");
+  const trackingPage = document.getElementById("trackingPage");
+  const timelineSteps = document.getElementById("timelineSteps");
+  const timelineLine = document.getElementById("timelineLine");
+  const trackingIdSpan = document.getElementById("trackingId");
+  const errorMsg = document.getElementById("error");
+  const trackBtn = document.getElementById("trackBtn");
+  const trackingInput = document.getElementById("trackingInput");
+
+  function createStep(update, idx) {
+    const step = document.createElement("div");
+    step.className = "timeline-step";
+
+    const dot = document.createElement("div");
+    dot.className = "timeline-dot";
+    dot.textContent = update.icon;
+    dot.id = `dot-${idx}`;
+
+    const content = document.createElement("div");
+    content.className = "timeline-content";
+    content.innerHTML = `<h3>${update.title}</h3><p>${update.desc}</p>`;
+    content.id = `content-${idx}`;
+    content.style.opacity = "0";
+    content.style.transition = "opacity 0.5s ease";
+
+    step.appendChild(dot);
+    step.appendChild(content);
+
+    return step;
+  }
+
+  function animateTimeline() {
+    const totalSteps = updates.length;
+
+    // After steps are created, calculate the vertical distance between first and last dot centers
+    const firstDot = document.getElementById("dot-0");
+    const lastDot = document.getElementById(`dot-${totalSteps-1}`);
+    const timelineRect = timelineSteps.getBoundingClientRect();
+
+    const firstRect = firstDot.getBoundingClientRect();
+    const lastRect = lastDot.getBoundingClientRect();
+
+    // Positions relative to timelineSteps container:
+    const firstCenter = firstRect.top + firstRect.height / 2 - timelineRect.top;
+    const lastCenter = lastRect.top + lastRect.height / 2 - timelineRect.top;
+
+    const lineHeight = lastCenter - firstCenter;
+
+    timelineLine.style.top = `${firstCenter}px`;
+    timelineLine.style.height = "0px"; // Start at zero height
+
+    function stepAnimation(timestamp) {
+      if (!stepAnimation.startTime) stepAnimation.startTime = timestamp;
+      const elapsed = timestamp - stepAnimation.startTime;
+      const animationDuration = totalSteps * 1300; // Total animation time in ms
+      const progress = Math.min(elapsed / animationDuration, 1);
+
+      timelineLine.style.height = `${progress * lineHeight}px`;
+
+      // Activate dots and content as the line reaches their centers
+      updates.forEach((_, idx) => {
+        const dot = document.getElementById(`dot-${idx}`);
+        const content = document.getElementById(`content-${idx}`);
+        const dotCenterOffset = (lastCenter - firstCenter) * (idx / (totalSteps - 1));
+        if (progress * lineHeight >= dotCenterOffset) {
+          dot.classList.add("active");
+          content.style.opacity = "1";
+        }
+      });
+
+      if (progress < 1) {
+        requestAnimationFrame(stepAnimation);
+      }
+    }
+
+    requestAnimationFrame(stepAnimation);
+  }
+
+  function buildTimeline() {
+    timelineSteps.innerHTML = "";
+    updates.forEach((update, idx) => {
+      timelineSteps.appendChild(createStep(update, idx));
+    });
+
+    // Animate timeline after DOM updates
+    setTimeout(() => {
+      animateTimeline();
+    }, 100);
+  }
+
+  function checkTrackingId() {
+    const enteredId = trackingInput.value.trim();
+    if (enteredId === validTrackingId) {
+      errorMsg.style.display = "none";
+      trackingIdSpan.textContent = enteredId;
+      loginPage.style.display = "none";
+      trackingPage.style.display = "block";
+      buildTimeline();
+    } else {
+      errorMsg.style.display = "block";
+    }
+  }
+
+  trackBtn.addEventListener("click", checkTrackingId);
+  trackingInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+      checkTrackingId();
+    }
+  });
+</script>
+
+</body>
+</html>
